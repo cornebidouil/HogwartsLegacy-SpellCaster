@@ -75,3 +75,24 @@ bool hasNvidiaGPU() {
 
     return hasNvidia;
 }
+
+std::string GetActiveWindowTitle() {
+    char windowTitle[256];
+    HWND hwnd = GetForegroundWindow(); // Get handle of the active window
+    if (hwnd != NULL) {
+        if (GetWindowTextA(hwnd, windowTitle, sizeof(windowTitle)) > 0) {
+            return std::string(windowTitle);
+        }
+    }
+    return "";
+}
+
+std::string trimTrailingSpaces(const std::string& str) {
+    size_t end = str.find_last_not_of(' ');
+    if (end != std::string::npos) {
+        return str.substr(0, end + 1);
+    }
+    else {
+        return "";  // If the string is all spaces, return an empty string
+    }
+}

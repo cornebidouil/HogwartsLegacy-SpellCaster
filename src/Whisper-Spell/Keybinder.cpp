@@ -324,7 +324,7 @@ std::map<std::string, std::vector<WORD>> Keybinder::loadGameBindings() {
 
 void Keybinder::loadConfBindings(const std::string& conf_path, const std::map<std::string, std::vector<WORD>>& game_bindings) {
 	std::vector<WORD> key_columns = game_bindings.at("columns"); // { 0x31, 0x32, 0x33, 0x34 };
-	std::vector<WORD> key_lines = game_bindings.at("lines");     //{ VK_F1, VK_F2, VK_F3, VK_F4 };
+	std::vector<WORD> key_lines = game_bindings.at("lines");     // { VK_F1, VK_F2, VK_F3, VK_F4 };
 
 	std::ifstream file(conf_path);
 
@@ -393,6 +393,12 @@ void Keybinder::stop() {
 
 bool Keybinder::decode(const std::string& word, const bool& final_record) {
 	bool lumos_cast = false;
+
+	//std::cout << "'" << trimTrailingSpaces( GetActiveWindowTitle() ) << "'" << std::endl;
+	if (trimTrailingSpaces( GetActiveWindowTitle() ) != "Hogwarts Legacy") {
+		std::cout << "Not ingame => input skipped" << std::endl;
+		return false;
+	}
 
 	if (_is_working) {
 		_is_working = false;
