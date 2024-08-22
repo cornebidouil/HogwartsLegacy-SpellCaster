@@ -1,4 +1,4 @@
-# Hogwarts Legacy Spellcaster
+# Hogwarts Legacy SpellCaster
 
 **Hogwarts Legacy Spellcaster** is a speech recognition tool designed to enhance your gameplay experience in Hogwarts Legacy. By recognizing your voice commands, it automatically casts spells in the game, making your wizarding journey even more immersive.
 
