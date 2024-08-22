@@ -1,0 +1,5 @@
+Key1;Key2;Key3;Key4
+lumos;arresto momentum;glacius;levioso
+accio;depulso;descendo;flipendo
+confringo;diffindo;expelliarmus;bombarda
+dissipate;wingardium leviosa;reparo;none
