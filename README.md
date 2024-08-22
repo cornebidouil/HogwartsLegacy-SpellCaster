@@ -60,6 +60,15 @@ In addition to the standard spells, the program supports a variety of special co
 - **Oppugno** (launches objects at enemies)
 - **Dissipate** (launch desilusion spell)
 
+## Acknowledgments
+
+This project relies on the following open-source projects:
+
+- **[whisper.cpp](https://github.com/ggerganov/whisper.cpp)**: A high-performance implementation of OpenAI's Whisper model for speech recognition.
+- **[silero-vad](https://github.com/snakers4/silero-vad)**: A powerful Voice Activity Detection (VAD) tool that helps in identifying when speech is present in an audio stream.
+
+I highly recommend checking out these projects if you're interested in speech recognition and voice activity detection!
+
 ## Support the Project
 
 This project was created by **Cornebidouil**. If you have any questions, feedback, or just want to connect, feel free to reach out!
