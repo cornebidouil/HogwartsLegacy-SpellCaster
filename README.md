@@ -66,8 +66,9 @@ This project relies on the following open-source projects:
 
 - **[whisper.cpp](https://github.com/ggerganov/whisper.cpp)**: A high-performance implementation of OpenAI's Whisper model for speech recognition.
 - **[silero-vad](https://github.com/snakers4/silero-vad)**: A powerful Voice Activity Detection (VAD) tool that helps in identifying when speech is present in an audio stream.
+- **[PortAudio](https://github.com/PortAudio/portaudio)**: A portable audio library designed to provide consistent audio input/output across various platforms.
 
-I highly recommend checking out these projects if you're interested in speech recognition and voice activity detection!
+I highly recommend checking out these projects if you're interested in speech recognition, voice activity detection, and audio processing!
 
 ## Support the Project
 
