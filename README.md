@@ -84,7 +84,7 @@ If you enjoy this project and would like to support its development :
 
 We invite you to join our Discord community to share your experiences, exchange tips, and discuss everything related to **Hogwarts Legacy Spellcaster**. We would love to have you there!
 
-[Join us on Discord](https://discord.gg/znnHwUCB)
+[Join us on Discord](https://discord.gg/zE4NRsTGdw)
 
 ---
 
