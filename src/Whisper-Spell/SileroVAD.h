@@ -20,9 +20,6 @@
 
 #include "onnxruntime_cxx_api.h"
 
-/*
- * Code coming from the silero-vad repo
- */
 
 class timestamp_t
 {

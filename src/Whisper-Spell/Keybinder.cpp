@@ -330,20 +330,24 @@ void Keybinder::loadConfBindings(const std::string& conf_path, const std::map<st
 
 	if (file.is_open()) {
 		std::string line;
-		std::getline(file, line);
+		//std::getline(file, line);
 
 		int line_count = 0;
 		while (std::getline(file, line)) {
-			if (line_count > 3)
+			if (line_count > 3) {
+				std::cerr << std::endl << "Too many lines in the keybinding.txt, should only be 4 for the 4 spell loadout." << std::endl << std::endl;
 				break;
+			}
 
 			std::stringstream ss(line);
 			std::string formula_name;
 
 			int column_count = 0;
 			while (std::getline(ss, formula_name, ';')) {
-				if (column_count > 3)
+				if (column_count > 3) {
+					std::cout << std::endl << "Too many columns in the keybinding.txt, should only be 4 spell by loadout." << std::endl << std::endl;
 					break;
+				}
 
 				_principal_bindings[formula_name] = std::vector<WORD>({ key_lines[line_count], key_columns[column_count] });
 				//std::cout << formula_name << " : " << key_lines[line_count] << " | " << key_columns[column_count] << std::endl;
@@ -426,7 +430,8 @@ bool Keybinder::decode(const std::string& word, const bool& final_record) {
 		}
 
 		else if (word == "accio broomstick" || word == "accio balais") {
-			_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::combinationKey, this, _secondary_bindings["accio broomstick"], 500));
+			combinationKey(_secondary_bindings["accio broomstick"], 500);
+			//_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::combinationKey, this, _secondary_bindings["accio broomstick"], 500));
 			//_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::combinationKey, this, std::vector<WORD>({ VK_TAB , 0x33 }), 500));
 		}
 		else if (word == "smash") {
@@ -439,7 +444,8 @@ bool Keybinder::decode(const std::string& word, const bool& final_record) {
 		}
 		else if (word == "protego") {
 			//pressKey('A', 0);
-			_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::pressKey, this, _secondary_bindings["protego"][0], 1000));
+			combinationKey(_secondary_bindings["protego"], 1000);
+			//_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::pressKey, this, _secondary_bindings["protego"][0], 1000));
 			//_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::pressKey, this, 'A', 1000));
 			
 			//_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::holdRightClick, this, 3000));
@@ -454,7 +460,8 @@ bool Keybinder::decode(const std::string& word, const bool& final_record) {
 			_lumos_status = false;
 		}
 		else if (word == "appare vestigium") {
-			_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::pressKey, this, _secondary_bindings["appare vestigium"][0], 50));
+			pressKey(_secondary_bindings["appare vestigium"][0], 50);
+			//_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::pressKey, this, _secondary_bindings["appare vestigium"][0], 50));
 			//_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::pressKey, this, 'V', 50));
 			//apressKey('V', 0);
 		}
@@ -469,8 +476,8 @@ bool Keybinder::decode(const std::string& word, const bool& final_record) {
 		else if (word == "alohomora") {
 			pressKey(_secondary_bindings["alohomora"][0], 0);
 		}
-		else
-			_is_working = true;
+		/*else
+			_is_working = true;*/
 
 		// --- Reset of lumos status if another spell is cast
 		//std::cout << _lumos_status << " " << _is_working << 
