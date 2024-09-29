@@ -3,6 +3,7 @@
 #include <portaudio.h>
 #include <whisper.h>
 //#include <torch/script.h> // One of the headers that include PyTorch C++ API
+#include <SDL.h>
 #include <algorithm>
 #include <regex>
 #include <numeric>
@@ -11,6 +12,7 @@
 #include <mutex>
 #include <thread>
 #include <chrono>
+#include <signal.h>
 
 #include "SileroVAD.h"
 #include "Keybinder.h"
@@ -24,11 +26,6 @@
 #define SPEECH_THRESHOLD 0.5
 
 
-// Define the structure for token data
-/*struct whisper_token_data {
-    int n_logits;
-    float* logits;
-};*/
 
 // Global variables for audio processing
 //std::vector<float> audioBuffer;
@@ -44,6 +41,22 @@ std::mutex bufferMutex;
 HMODULE whisperLib = nullptr;
 typedef whisper_context* (*whisper_init_from_file_with_params_func)(const char* path_model, whisper_context_params params);
 typedef int (*whisper_full_func)(struct whisper_context* ctx, struct whisper_full_params params, const float* samples, int n_samples);
+
+
+volatile bool stop = false;
+
+BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
+{
+    switch (fdwCtrlType)
+    {
+    case CTRL_C_EVENT:
+        stop = true;
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
 
 
 
@@ -92,11 +105,6 @@ float compute_confidence(const whisper_token_data* tokens, int n_tokens) {
     std::cout << "Final confidence score: " << confidence << std::endl;
 
     return confidence;
-
-    /*float sum_exp_probs = std::accumulate(log_probs.begin(), log_probs.end(), 0.0f,
-        [](float acc, float val) { return acc + std::exp(val); });
-
-    return sum_exp_probs / n_tokens;*/
 }
 
 // Transcribe function using the Whisper model
@@ -146,22 +154,10 @@ std::pair<std::string, float> transcribeAudio(const std::vector<float>& audioDat
         transcription += text;
 
         const int n_tokens = whisper_full_n_tokens(ctx, i);
-        /*std::vector<whisper_token_data> tokens(n_tokens);
-        for (int j = 0; j < n_tokens; ++j) {
-            whisper_token_data token = whisper_full_get_token_data(ctx, i, j);
-            tokens[j] = token;
-        }
-        confidence += compute_confidence(tokens.data(), n_tokens);*/
-        
-        //std::cout << "Segment " << i << std::endl;
 
         float proba = 0.0f;
         for (int j = 0; j < n_tokens; ++j) {
             proba += whisper_full_get_token_p(ctx, i, j);
-
-            /*whisper_token token_id = whisper_full_get_token_id(ctx, i, j);
-            const char* token_text = whisper_token_to_str(ctx, token_id);
-            std::cout << "Token ID: " << token_id << ", Text: " << token_text << std::endl;*/
         }
         confidence += proba / n_tokens;
 
@@ -200,16 +196,10 @@ static int paCallback(const void* inputBuffer, void* outputBuffer, unsigned long
     //float speech_level = 0.0f;
     bool is_speech = false;
     try {
-        vad->process(vadBuffer); // std::vector<float>(in, in + framesPerBuffer)
-        //vad->process(std::vector<float>(in, in + framesPerBuffer));
+        vad->process(vadBuffer);
 
         const auto& speech_timestamps = vad->get_speech_timestamps();
         is_speech = !speech_timestamps.empty();
-
-        /*std::vector<timestamp_t> stamps = vad->get_speech_timestamps();
-        for (int i = 0; i < stamps.size(); i++) {
-            std::cout << stamps[i].c_str() << std::endl;
-        }*/
 
     } catch (const Ort::Exception& e) {
         std::cerr << "ONNX Runtime error: " << e.what() << std::endl;
@@ -217,11 +207,8 @@ static int paCallback(const void* inputBuffer, void* outputBuffer, unsigned long
         std::cerr << "Standard exception: " << e.what() << std::endl;
     }
 
-    //std::cout << "Frame per buffer: " << framesPerBuffer << std::endl;
-    //std::cout << "Speech level: " << vad->get_speech_prob() << " (" << is_speech << ")" << std::endl;
-    
 
-    if (is_speech) { // speech_level > SPEECH_THRESHOLD
+    if (is_speech) { 
         if (!isSpeaking) {
             isSpeaking = true;
             speechBuffer.clear();
@@ -236,7 +223,7 @@ static int paCallback(const void* inputBuffer, void* outputBuffer, unsigned long
             isSpeaking = false;
 
             // Transcribe the collected speech
-            std::vector<float> audioChunk; //(speechBuffer.begin(), speechBuffer.end());
+            std::vector<float> audioChunk; 
             {
                 std::lock_guard<std::mutex> lock(bufferMutex);
                 audioChunk = std::move(speechBuffer);
@@ -245,14 +232,11 @@ static int paCallback(const void* inputBuffer, void* outputBuffer, unsigned long
             
 
             // Transcribe using Whisper model
-            std::async(std::launch::async, [audioChunk = std::move(audioChunk)]() { //[this, ...]
+            std::async(std::launch::async, [audioChunk = std::move(audioChunk)]() { 
                 auto start = std::chrono::high_resolution_clock::now();
                 auto [transcription, confidence] = transcribeAudio(audioChunk, SAMPLE_RATE);
                 auto end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double> elapsed = end - start;
-
-                //if (transcription.size() != 0)
-                //std::cout << "Transcription: " << transcription << " (Confidence: " << confidence << ")" << " | t: " << elapsed.count() << "s" << std::endl;
 
                 if (confidence > 0.7f && !transcription.empty()) {
                     std::cout << "Transcription: " << transcription << " (Confidence: " << confidence << ")" << " | t: " << elapsed.count() << "s" << std::endl;
@@ -267,7 +251,6 @@ static int paCallback(const void* inputBuffer, void* outputBuffer, unsigned long
             
             // Implement any post-transcription logic (e.g., command execution)
 
-            //speechBuffer.clear();
             
         }
     }
@@ -275,7 +258,22 @@ static int paCallback(const void* inputBuffer, void* outputBuffer, unsigned long
     return paContinue;
 }
 
-int main() {
+
+
+
+
+
+
+int main(int argc, char*argv[]) {
+    if (!SetConsoleCtrlHandler(CtrlHandler, TRUE)) {
+        std::cerr << "ERROR: Could not set control handler" << std::endl;
+#ifdef _WIN32
+        system("PAUSE");
+#endif
+        return 1;
+    }
+
+
 
     const ORTCHAR_T* model_path = ORT_TSTR("models/silero_vad.onnx");
     vad = new VadIterator(
@@ -296,44 +294,50 @@ int main() {
     std::cout << "\t*********************************************" << std::endl << std::endl << std::endl;
 
     std::cout << "GPU drivers updating is highly recommended" << std::endl;
-    //std::cout << "NVIDIA card: " << hasNvidiaGPU() << std::endl;
-    //whisperLib = hasNvidiaGPU() ? LoadLibraryA("whisper_cuda.dll") : LoadLibraryA("whisper.dll");
-    switch (detectGPU()) {
+
+    switch (detectGPU ()) {
         case GPUVendor::NVIDIA_CUDA :
             if (isCudaCompatible()) {
                 whisperLib = LoadLibraryA("whisper_cuda.dll");
-                std::cout << "NVIDIA card detected with CUDA compatibility.";
+                std::cout << "\tNVIDIA card detected with CUDA compatibility.";
             }
             else {
                 whisperLib = LoadLibraryA("whisper_clblast.dll");
-                std::cout << "NVIDIA card detected without CUDA compatibility. Using CLBlast.";
+                std::cout << "\tNVIDIA card detected without CUDA compatibility. Using CLBlast.";
             }
             break;
         case GPUVendor::AMD_ROCM :
             whisperLib = LoadLibraryA("whisper_hipblas.dll");
-            std::cout << "AMD card detected with hipBLAS compatibility.";
+            std::cout << "\tAMD card detected with hipBLAS compatibility.";
             break;
         case GPUVendor::DEFAULT_GPU :
             whisperLib = LoadLibraryA("whisper_clblast.dll");
-            std::cout << "Graphic card detected. Using CLBlast.";
+            std::cout << "\tGraphic card detected. Using CLBlast.";
             break;
         case GPUVendor::AMD_DEFAULT :
             whisperLib = LoadLibraryA("whisper_clblast.dll");
-            std::cout << "AMD card detected without hipBLAS compatibility. Using CLBlast.";
+            std::cout << "\tAMD card detected without hipBLAS compatibility. Using CLBlast.";
             break;
         case GPUVendor::NVIDIA_DEFAULT :
             whisperLib = LoadLibraryA("whisper_clblast.dll");
-            std::cout << "NVIDIA card detected without CUDA compatibility. Using CLBlast.";
+            std::cout << "\tNVIDIA card detected without CUDA compatibility. Using CLBlast.";
             break;
         default :
             whisperLib = LoadLibraryA("whisper_openblas.dll");
-            std::cout << "No compatible graphic card detected."; 
+            std::cout << "\tNo compatible graphic card detected."; 
             break;
     }
     std::cout << std::endl << std::endl;
-    //whisperLib = LoadLibraryA("whisper-openblas.dll");
 
-    PaError err;
+    // Initialize SDL2 for controllers inputs
+    if (SDL_Init(SDL_INIT_GAMECONTROLLER) != 0) {
+        std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
+#ifdef _WIN32
+        system("PAUSE");
+#endif // !_WIN32
+        exit(-1);
+    }
+
 
     keys = new Keybinder("keybinding.txt");
 
@@ -341,70 +345,26 @@ int main() {
     std::string modelPath = "models/ggml-model.bin";
     if (!loadWhisperModel(modelPath)) {
         std::cerr << "Failed to load Whisper model from " << modelPath << std::endl;
+#ifdef _WIN32
+        system("PAUSE");
+#endif // !_WIN32
         return 1;
     }
 
-    //std::cout << "Vocab size: " << whisper_model_n_vocab(ctx) << " " << whisper_is_multilingual(ctx) << std::endl;
-    //whisper_token token_test = 51864;
-    //std::cout << whisper_token_to_str(ctx, token_test) << std::endl;
+    // --- Initialize PortAudio
+    //
 
-    // Initialize PortAudio
+    PaError err;
+    
     err = Pa_Initialize();
     if (err != paNoError) {
         std::cerr << "PortAudio error: " << Pa_GetErrorText(err) << std::endl;
+#ifdef _WIN32
+        system("PAUSE");
+#endif // !_WIN32
         return 1;
     }
 
-    /*
-    // Find ASIO host API
-    PaHostApiIndex asioApiIndex = Pa_HostApiTypeIdToHostApiIndex(paASIO);
-    if (asioApiIndex == paHostApiNotFound) {
-        std::cerr << "ASIO host API not found!" << std::endl;
-        Pa_Terminate();
-        return -1;
-    }
-
-    const PaHostApiInfo* asioApiInfo = Pa_GetHostApiInfo(asioApiIndex);
-    std::cout << "Using ASIO host API: " << asioApiInfo->name << std::endl;
-
-    const PaDeviceInfo* defaultDeviceInfo = Pa_GetDeviceInfo(Pa_GetDefaultInputDevice());
-    std::cout << "Default: " << defaultDeviceInfo->name << " -> " << defaultDeviceInfo->hostApi << std::endl;
-
-    // List all available ASIO devices
-    std::cout << std::endl << "Available ASIO devices:" << std::endl;
-    int numDevices = Pa_GetDeviceCount();
-    std::vector<int> asioDeviceIndexes;
-
-    for (int i = 0; i < numDevices; ++i) {
-        const PaDeviceInfo* deviceInfo = Pa_GetDeviceInfo(i);
-        std::cout << "\t" << i << ": " << deviceInfo->name; //<< std::endl;
-        if (deviceInfo->maxInputChannels > 0) { //deviceInfo->hostApi == asioApiIndex
-            //std::cout << "\t" << asioDeviceIndexes.size() << ": " << deviceInfo->name << std::endl;
-            std::cout << " -> " << deviceInfo->hostApi;
-            asioDeviceIndexes.push_back(i);
-        }
-        std::cout << std::endl;
-    }
-
-    // Let the user select an ASIO device
-    int userSelection = -1;
-    std::cout << std::endl << "Enter the index of the ASIO device you want to use: ";
-    std::cin >> userSelection;
-
-    // Validate the device index
-    if (userSelection < 0 || userSelection >= asioDeviceIndexes.size()) {
-        std::cerr << "Invalid device index." << std::endl;
-        Pa_Terminate();
-        return 1;
-    }
-
-    int asioDeviceIndex = asioDeviceIndexes[userSelection];
-    const PaDeviceInfo* selectedDeviceInfo = Pa_GetDeviceInfo(asioDeviceIndex);
-    if (selectedDeviceInfo->hostApi != asioApiIndex) {
-        std::cerr << "Selected device is not an ASIO device." << std::endl;
-        Pa_Terminate();
-        return 1;
-    }*/
 
    // List all available input devices
     int numDevices = Pa_GetDeviceCount();
@@ -414,9 +374,6 @@ int main() {
     for (int i = 0; i < numDevices; ++i) {
         const PaDeviceInfo* deviceInfo = Pa_GetDeviceInfo(i);
         if (deviceInfo->maxInputChannels > 0) {
-            /*std::cout << inputDeviceIndexes.size() << ": " << deviceInfo->name 
-                      << " (API: " << Pa_GetHostApiInfo(deviceInfo->hostApi)->name << ")" << std::endl;
-            inputDeviceIndexes.push_back(i);*/
 
             // Set up test parameters
             PaStreamParameters testParams;
@@ -437,12 +394,8 @@ int main() {
     }
 
 
-    /*std::cout << std::endl;
-    for (int i = 0; i < inputDeviceIndexes.size(); ++i) {
-        std::cout << "inputDeviceIndexes[" << i << "] = " << inputDeviceIndexes[i] << std::endl;
-    }*/
-
-    // Let the user select an input device
+    // --- Let the user select an input device
+    //
     int userSelection = -1;
     std::cout << std::endl << "Enter the index of the input device you want to use (latency WASAPI > MME > DirectSound): ";
     std::cin >> userSelection;
@@ -451,6 +404,9 @@ int main() {
     if (userSelection < 0 || userSelection >= inputDeviceIndexes.size()) {
         std::cerr << "Invalid device index." << std::endl;
         Pa_Terminate();
+#ifdef _WIN32
+        system("PAUSE");
+#endif // !_WIN32
         return 1;
     }
 
@@ -479,16 +435,15 @@ int main() {
 
     // Open an audio I/O stream
     PaStream* stream;
-    /*err = Pa_OpenDefaultStream(&stream, 1, 0, paFloat32, SAMPLE_RATE, FRAMES_PER_BUFFER, paCallback, nullptr);
-    if (err != paNoError) {
-        std::cerr << "PortAudio error: " << Pa_GetErrorText(err) << std::endl;
-        return 1;
-    }*/
+
     err = Pa_OpenStream(&stream, &inputParameters, NULL, SAMPLE_RATE, FRAMES_PER_BUFFER, paClipOff, paCallback, nullptr);
     if (err != paNoError) {
         std::cerr << "PortAudio error: " << Pa_GetErrorText(err) << std::endl;
         std::cerr << "Failed to open stream for device: " << selectedDeviceInfo->name << std::endl;
         Pa_Terminate();
+#ifdef _WIN32
+        system("PAUSE");
+#endif // !_WIN32
         return -1;
     }
 
@@ -496,6 +451,9 @@ int main() {
     err = Pa_StartStream(stream);
     if (err != paNoError) {
         std::cerr << "PortAudio error: " << Pa_GetErrorText(err) << std::endl;
+#ifdef _WIN32
+        system("PAUSE");
+#endif // !_WIN32
         return 1;
     }
 
@@ -527,6 +485,7 @@ int main() {
     std::cout << "\t\tnone;none;none;none" << std::endl;
     std::cout << "\t\tnone;none;none;none" << std::endl << std::endl;
     std::cout << "\tFill the \"none\" with the spell name associated to the spellbar (without uppercase)." << std::endl; 
+    std::cout << "\tKeep the spaces as spaces ('arresto momentum')" << std::endl;
     std::cout << "\tExample : you have lumos and accio as the first 2 spells of your 1rst spellbar loadout" << std::endl << std::endl;
     std::cout << "\t\tlumos;accio;none;none" << std::endl;
     std::cout << "\t\tnone;none;none;none" << std::endl;
@@ -535,10 +494,12 @@ int main() {
 
     std::cout << std::endl << std::endl;
 
+    //keys->checkAllBindings();
+
     std::cout << "Listening... Press Ctrl+C to stop." << std::endl << std::endl;
 
     // Keep the stream active
-    while (true) {
+    while (!stop) {
         Pa_Sleep(1000);
 
         // Potential processing here
@@ -548,6 +509,9 @@ int main() {
     err = Pa_StopStream(stream);
     if (err != paNoError) {
         std::cerr << "PortAudio error: " << Pa_GetErrorText(err) << std::endl;
+#ifdef _WIN32
+        system("PAUSE");
+#endif // !_WIN32
         return 1;
     }
 
@@ -555,6 +519,9 @@ int main() {
     err = Pa_CloseStream(stream);
     if (err != paNoError) {
         std::cerr << "PortAudio error: " << Pa_GetErrorText(err) << std::endl;
+#ifdef _WIN32
+        system("PAUSE");
+#endif // !_WIN32
         return 1;
     }
 
@@ -568,6 +535,13 @@ int main() {
     // Clear vad model
     delete vad;
     delete keys;
+
+    SDL_Quit();
+
+#ifdef _WIN32
+    system("PAUSE");
+#endif // !_WIN32
+
 
     return 0;
 }

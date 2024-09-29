@@ -128,41 +128,157 @@ VK_SCROLL      0x91    // SCROLL LOCK key
 Keybinder::Keybinder(std::string conf_path) :
 _is_working(false),
 _lumos_status(false),
-_conf_path(conf_path)
+_conf_path(conf_path),
+_device_controller(-1)
 {
 	_principal_bindings.clear();
 	_secondary_bindings.clear();
 	_game_bindings.clear();
+
+	selectingGamepad();
 
 	_game_bindings = loadGameBindings();
 	loadConfBindings(conf_path, _game_bindings);
 }
 
 Keybinder::~Keybinder() {
-
+	if (_device_controller > DEVICE_GAMEPAD_UNDEFINED) {
+		vigem_target_remove(_client, _pad);
+		vigem_target_free(_pad);
+		vigem_free(_client);
+	}
 }
 
-std::map<std::string, std::vector<WORD>> Keybinder::loadGameBindings() {
-	
-	std::map<std::string, std::vector<WORD>> binding = {
-		{"columns", { 0, 0, 0, 0 }},
-		{"lines", { 0, 0, 0, 0 }},
-		{"accio broomstick", { 0 , 0 }},
-		{"smash", {0}},
-		{"revelio", {0}},
-		{"protego", {0}},
-		{"appare vestigium", {0}},
-		{"petrificus totalus", {0}},
-		{"oppugno", {0}},
-		{"alohomora", {0}}
-	};
-	//{"stupefy", {0}}
 
-	/*const char* userProfile = std::getenv("USERPROFILE");
-	if (!userProfile) {
-		std::cerr << "Failed to get USERPROFILE environment variable" << std::endl;
+void Keybinder::selectingGamepad() {
+	std::cout << std::endl << "Do you play with a :" << std::endl << "\t" << DEVICE_KEYBOARD << " -> Keyboard" << std::endl << "\t" << DEVICE_GAMEPAD_UNDEFINED << " -> Gamepad" << std::endl;
+	std::cout << std::endl << "Enter the playing device : ";
+	std::cin  >> _device_controller;
+
+	if (_device_controller != DEVICE_KEYBOARD and _device_controller != DEVICE_GAMEPAD_UNDEFINED) {
+		std::cerr << "Invalid device controller." << std::endl;
+#ifdef _WIN32
+		system("PAUSE");
+#endif // _WIN32
 		exit(-1);
-	}*/
+	}
+
+	if (_device_controller == DEVICE_GAMEPAD_UNDEFINED) {
+		// List all available gamepads
+		std::cout << std::endl << "Available gamepads:" << std::endl;
+		for (int i = 0; i < SDL_NumJoysticks(); ++i) {
+			if (SDL_IsGameController(i)) {
+				SDL_GameController* controller = SDL_GameControllerOpen(i);
+				if (controller) {
+					const char* name = SDL_GameControllerName(controller);
+					std::cout << "\t" << i << ": " << name << std::endl;
+
+					// Determine if it's a DualShock or Xbox controller
+					if (strstr(name, "DualShock") != nullptr || 
+						strstr(name, "Sony") != nullptr) {
+
+						std::cout << "   Type: DualShock" << std::endl;
+						_device_controller = DEVICE_GAMEPAD_DUALSHOCK;
+					}
+					else if (strstr(name, "Xbox") != nullptr || 
+							 strstr(name, "Microsoft") != nullptr) {
+
+						std::cout << "   Type: Xbox" << std::endl;
+						_device_controller = DEVICE_GAMEPAD_XBOX;
+					}
+					else {
+						std::cout << "   Type: Unknown" << std::endl;
+#ifdef _WIN32
+						system("PAUSE");
+#endif // _WIN32
+						_device_controller = DEVICE_GAMEPAD_UNKNOWN;
+					}
+
+					SDL_GameControllerClose(controller);
+				}
+			}
+		}
+
+
+
+		if (_device_controller == DEVICE_GAMEPAD_UNDEFINED) { 
+			std::cout << "\tNo gamepad found." << std::endl;
+
+			_device_controller = DEVICE_GAMEPAD_XBOX;
+		}
+		//else {
+
+		int manual_selection = -1;
+		std::cout << std::endl << "Do you want to use the :" << std::endl;
+		std::cout << "\t0 -> Automatically selected controller: " << (_device_controller == DEVICE_GAMEPAD_DUALSHOCK ? "DualShock" : "Xbox") << " controller" << std::endl;
+		std::cout << "\t1 -> " << (_device_controller == DEVICE_GAMEPAD_DUALSHOCK ? "Xbox" : "DualShock") << " controller" << std::endl;
+		std::cout << std::endl << "Enter the controller's type : ";
+		std::cin >> manual_selection;
+
+		if (manual_selection == 1) {
+			if (_device_controller == DEVICE_GAMEPAD_DUALSHOCK) {
+				_device_controller = DEVICE_GAMEPAD_XBOX;
+			}
+			else if (_device_controller == DEVICE_GAMEPAD_XBOX) {
+				_device_controller = DEVICE_GAMEPAD_DUALSHOCK;
+			}
+			std::cout << "Controller type switched to: " << (_device_controller == DEVICE_GAMEPAD_DUALSHOCK ? "DualShock" : "Xbox") << std::endl;
+		}
+
+
+		_client = vigem_alloc();
+		if (vigem_connect(_client) != VIGEM_ERROR_NONE) {
+			std::cerr << "Failed to connect to ViGEm Bus" << std::endl;
+#ifdef _WIN32
+			system("PAUSE");
+#endif
+			exit(-1);
+		}
+
+		if (_device_controller == DEVICE_GAMEPAD_DUALSHOCK) {
+			_pad = vigem_target_ds4_alloc();
+			if (vigem_target_add(_client, _pad) != VIGEM_ERROR_NONE) {
+				std::cerr << "Failed to add virtual DualShock 4 controller" << std::endl;
+				vigem_free(_client);
+#ifdef _WIN32
+				system("PAUSE");
+#endif
+				exit(-1);
+			}
+		}
+		else { // DEVICE_GAMEPAD_XBOX || DEVICE_GAMEPAD_UNKNOWN
+			_pad = vigem_target_x360_alloc();
+			if (vigem_target_add(_client, _pad) != VIGEM_ERROR_NONE) {
+				std::cerr << "Failed to add virtual Xbox 360 controller" << std::endl;
+				vigem_free(_client);
+#ifdef _WIN32
+				system("PAUSE");
+#endif
+				exit(-1);
+			}
+		}
+		//}
+	}
+	else {
+		std::cout << std::endl;
+	}
+}
+
+std::unordered_map<std::string, std::vector<WORD>> Keybinder::loadGameBindings() {
+	
+	std::unordered_map<std::string, std::vector<WORD>> binding = {
+		{"columns", { UNDEFINED_BINDING, UNDEFINED_BINDING, UNDEFINED_BINDING, UNDEFINED_BINDING }},
+		{"lines", { UNDEFINED_BINDING, UNDEFINED_BINDING, UNDEFINED_BINDING, UNDEFINED_BINDING }},
+		{"accio broomstick", { UNDEFINED_BINDING , UNDEFINED_BINDING }},
+		{"smash", {UNDEFINED_BINDING}},
+		{"revelio", {UNDEFINED_BINDING}},
+		{"protego", {UNDEFINED_BINDING}},
+		{"appare vestigium", {UNDEFINED_BINDING}},
+		{"petrificus totalus", {UNDEFINED_BINDING}},
+		{"oppugno", {UNDEFINED_BINDING}},
+		{"alohomora", {UNDEFINED_BINDING}}
+	};
+
 	char* userProfile;
 	size_t profile_size;
 
@@ -184,11 +300,16 @@ std::map<std::string, std::vector<WORD>> Keybinder::loadGameBindings() {
 
 	if (!inputFile) {
 		std::cout << "*** Game config not found : default key binding used ***" << std::endl;
-		return defaultBinding;
+		if (_device_controller == DEVICE_GAMEPAD_DUALSHOCK)
+			return defaultDS4Binding;
+		else if (_device_controller == DEVICE_GAMEPAD_XBOX || _device_controller == DEVICE_GAMEPAD_UNKNOWN)
+			return defaultXUSBBinding;
+		else 
+			return defaultBinding;
 	}
 
 	WORD currentLayout = PRIMARYLANGID(HIWORD(GetKeyboardLayout(0))); //GetKeyboardLayout(0);
-	if (currentLayout == LANG_FRENCH)
+	if (_device_controller == DEVICE_KEYBOARD && currentLayout == LANG_FRENCH)
 		std::cout << "*** AZERTY keyboard detected ***" << std::endl;
 
 	std::vector<std::string> actionChecked;
@@ -212,97 +333,29 @@ std::map<std::string, std::vector<WORD>> Keybinder::loadGameBindings() {
 		key = line.substr(keyStart, keyEnd - keyStart);
 
 		auto it = std::find(actionChecked.begin(), actionChecked.end(), actionName);
-		if (key.find("Gamepad") != std::string::npos || it != actionChecked.end())
+
+		if ((_device_controller == DEVICE_KEYBOARD && key.find("Gamepad") != std::string::npos) ||
+			(_device_controller != DEVICE_KEYBOARD && key.find("Gamepad") == std::string::npos) ||
+			it != actionChecked.end())
 			continue;
 
 		// Convert the key to the AZERTY equivalent if necessary
-		if (currentLayout == LANG_FRENCH) { // 0x40c is the identifier for the French (France) AZERTY layout
+		if (_device_controller == DEVICE_KEYBOARD && currentLayout == LANG_FRENCH) { // 0x40c is the identifier for the French (France) AZERTY layout
 			key = getAzertyEquivalent(key);
 		}
 
-		// Identify the action
-		if (actionName == "AM_Loadout1") {
-			binding["lines"][0] = unrealKeyMap.at(key);
+		if (updateBinding(binding, actionName, key))
 			actionChecked.push_back(actionName);
-		}
-		else if (actionName == "AM_Loadout2") {
-			binding["lines"][1] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		else if (actionName == "AM_Loadout3") {
-			binding["lines"][2] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		else if (actionName == "AM_Loadout4") {
-			binding["lines"][3] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		else if (actionName == "AM_SpellButton1") {
-			binding["columns"][0] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		else if (actionName == "AM_SpellButton2") {
-			binding["columns"][1] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		else if (actionName == "AM_SpellButton3") {
-			binding["columns"][2] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		else if (actionName == "AM_SpellButton4") {
-			binding["columns"][3] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		else if (actionName == "AM_ItemMenu") {
-			binding["accio broomstick"][0] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		else if (actionName == "UMGGadgetWheelMountSlot3") {
-			binding["accio broomstick"][1] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		else if (actionName == "AM_Navigation") {
-			binding["appare vestigium"][0] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		else if (actionName == "AM_Interact") {
-			binding["alohomora"][0] = unrealKeyMap.at(key);
-			binding["petrificus totalus"][0] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		else if (actionName == "AM_Oppugno") {
-			binding["oppugno"][0] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		else if (actionName == "AM_Protego") {
-			binding["protego"][0] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		else if (actionName == "AM_Revelio") {
-			binding["revelio"][0] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		else if (actionName == "AM_CriticalFinisher") {
-			binding["smash"][0] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		else {
+		else 
 			continue;
-		}
 
-		/*
-		else if (actionName == "AM_Stupefy") {
-			binding["stupefy"][0] = unrealKeyMap.at(key);
-			actionChecked.push_back(actionName);
-		}
-		*/
 	}
 
 	// Check if all the bindings were found
 	bool error_found = false;
 	for (auto it = binding.begin(); it != binding.end(); ++it) {
 		for (auto it_vec = it->second.begin(); it_vec != it->second.end(); ++it_vec) {
-			if (*it_vec == 0)
+			if (*it_vec == UNDEFINED_BINDING)
 				error_found = true; break; break;
 		}
 	}
@@ -315,6 +368,10 @@ std::map<std::string, std::vector<WORD>> Keybinder::loadGameBindings() {
 			}
 			std::cout << std::endl;
 		}
+#ifdef _WIN32
+		system("PAUSE");
+#endif
+		std::cout << std::endl;
 	}
 
 	inputFile.close();
@@ -322,7 +379,52 @@ std::map<std::string, std::vector<WORD>> Keybinder::loadGameBindings() {
 	return binding;
 }
 
-void Keybinder::loadConfBindings(const std::string& conf_path, const std::map<std::string, std::vector<WORD>>& game_bindings) {
+
+WORD Keybinder::keyToBind(const std::string& key) {
+	if (_device_controller == DEVICE_KEYBOARD) {
+		return unrealKeyMap.at(key);
+	}
+	else if (_device_controller == DEVICE_GAMEPAD_DUALSHOCK) {
+		return ds4_gamepadButtonMap.at(key);
+	}
+	else {
+		return xusb_gamepadButtonMap.at(key);
+	}
+}
+
+bool Keybinder::updateBinding(std::unordered_map<std::string, std::vector<WORD>>& binding, const std::string& actionName, const std::string& key) {
+	static const std::unordered_map<std::string, std::pair<std::string, int>> actionMap = {
+        {"AM_Loadout1", {"lines", 0}},
+        {"AM_Loadout2", {"lines", 1}},
+        {"AM_Loadout3", {"lines", 2}},
+        {"AM_Loadout4", {"lines", 3}},
+        {"AM_SpellButton1", {"columns", 0}},
+        {"AM_SpellButton2", {"columns", 1}},
+        {"AM_SpellButton3", {"columns", 2}},
+        {"AM_SpellButton4", {"columns", 3}},
+        {"AM_ItemMenu", {"accio broomstick", 0}},
+        {"UMGGadgetWheelMountSlot3", {"accio broomstick", 1}},
+        {"AM_Navigation", {"appare vestigium", 0}},
+        {"AM_Interact", {"alohomora", 0}},
+        {"AM_Oppugno", {"oppugno", 0}},
+        {"AM_Protego", {"protego", 0}},
+        {"AM_Revelio", {"revelio", 0}},
+        {"AM_CriticalFinisher", {"smash", 0}}
+    };
+
+    auto it = actionMap.find(actionName);
+    if (it != actionMap.end()) {
+		//std::cout << "action: " << actionName << " " << key << " " << keyToBind(key) << std::endl;
+        binding[it->second.first][it->second.second] = keyToBind(key);
+        if (actionName == "AM_Interact") {
+            binding["petrificus totalus"][0] = keyToBind(key);
+        }
+        return true;
+    }
+    return false;
+}
+
+void Keybinder::loadConfBindings(const std::string& conf_path, const std::unordered_map<std::string, std::vector<WORD>>& game_bindings) {
 	std::vector<WORD> key_columns = game_bindings.at("columns"); // { 0x31, 0x32, 0x33, 0x34 };
 	std::vector<WORD> key_lines = game_bindings.at("lines");     // { VK_F1, VK_F2, VK_F3, VK_F4 };
 
@@ -348,6 +450,9 @@ void Keybinder::loadConfBindings(const std::string& conf_path, const std::map<st
 					std::cout << std::endl << "Too many columns in the keybinding.txt, should only be 4 spell by loadout." << std::endl << std::endl;
 					break;
 				}
+
+				std::transform(formula_name.begin(), formula_name.end(), formula_name.begin(),
+				[](unsigned char c) { return std::tolower(c); });
 
 				_principal_bindings[formula_name] = std::vector<WORD>({ key_lines[line_count], key_columns[column_count] });
 				//std::cout << formula_name << " : " << key_lines[line_count] << " | " << key_columns[column_count] << std::endl;
@@ -399,7 +504,7 @@ bool Keybinder::decode(const std::string& word, const bool& final_record) {
 	bool lumos_cast = false;
 
 	//std::cout << "'" << trimTrailingSpaces( GetActiveWindowTitle() ) << "'" << std::endl;
-	if (trimTrailingSpaces( GetActiveWindowTitle() ) != "Hogwarts Legacy") {
+	if (trimTrailingSpaces(GetActiveWindowTitle()) != "Hogwarts Legacy") {
 		std::cout << "Not ingame => input skipped" << std::endl;
 		return false;
 	}
@@ -416,100 +521,136 @@ bool Keybinder::decode(const std::string& word, const bool& final_record) {
 		// --- Special case of lumos
 		if (word == "lumos") {
 			lumos_cast = true;
-			/*if (_lumos_status) { // If lumos cast over lumos => cancel
-				_is_working = true;
-				return _is_working;
-			}*/
 			_lumos_status = true;
 		}
 		
 		auto it = _principal_bindings.find(word);
 		if (it != _principal_bindings.end()) {
-			for (WORD key : it->second)
-				pressKey(key, 0);
+			if (_device_controller == DEVICE_KEYBOARD) {
+				for (const WORD& key : it->second)
+					pressKey(key, 0);
+			} else if (_device_controller == DEVICE_GAMEPAD_DUALSHOCK) {
+				sendDS4PrincipalSpells(it->second);
+			} else {
+				sendXUSBPrincipalSpells(it->second);
+			}
+			
 		}
 
 		else if (word == "accio broomstick" || word == "accio balais") {
-			combinationKey(_secondary_bindings["accio broomstick"], 500);
-			//_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::combinationKey, this, _secondary_bindings["accio broomstick"], 500));
-			//_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::combinationKey, this, std::vector<WORD>({ VK_TAB , 0x33 }), 500));
+			if (_device_controller == DEVICE_KEYBOARD)
+				combinationKey(_secondary_bindings["accio broomstick"], 500);
+			else if (_device_controller == DEVICE_GAMEPAD_DUALSHOCK)
+				combinationDS4Button(_secondary_bindings["accio broomstick"], 500);
+			else
+				combinationXUSBButton(_secondary_bindings["accio broomstick"], 500);
 		}
-		else if (word == "smash") {
-			pressKey(_secondary_bindings["smash"][0], 0);
-			//pressKey('X', 0);
-		}
-		else if (word == "revelio") {
-			pressKey(_secondary_bindings["revelio"][0], 0);
-			//pressKey('R', 0);
-		}
-		else if (word == "protego") {
-			//pressKey('A', 0);
-			combinationKey(_secondary_bindings["protego"], 1000);
-			//_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::pressKey, this, _secondary_bindings["protego"][0], 1000));
-			//_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::pressKey, this, 'A', 1000));
-			
-			//_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::holdRightClick, this, 3000));
-		}
+
 		else if (word == "nox") {
 			auto it = _principal_bindings.find("lumos");
 			if (it != _principal_bindings.end()) {
-				for (WORD key : it->second)
-					pressKey(key, 0);
+				if (_device_controller == DEVICE_KEYBOARD) {
+					for (WORD key : it->second)
+						pressKey(key);
+				}
+				else if (_device_controller == DEVICE_GAMEPAD_DUALSHOCK) {
+					sendDS4PrincipalSpells(it->second);
+				}
+				else {
+					sendXUSBPrincipalSpells(it->second);
+				}
 			}
 
 			_lumos_status = false;
 		}
 		else if (word == "appare vestigium") {
-			pressKey(_secondary_bindings["appare vestigium"][0], 50);
-			//_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::pressKey, this, _secondary_bindings["appare vestigium"][0], 50));
-			//_hold_thread.emplace_back(std::async(std::launch::async, &Keybinder::pressKey, this, 'V', 50));
-			//apressKey('V', 0);
+			if (_device_controller == DEVICE_KEYBOARD)
+				pressKey(_secondary_bindings["appare vestigium"][0], 50);
+			else if (_device_controller == DEVICE_GAMEPAD_DUALSHOCK)
+				pressDS4Button(_secondary_bindings["appare vestigium"][0], 50);
+			else
+				pressXUSBButton(_secondary_bindings["appare vestigium"][0], 50);
 		}
-		else if (word == "petrificus totalus") {
-			pressKey(_secondary_bindings["petrificus totalus"][0], 0);
-			//pressKey('F', 0);
+		else if (word == "smash") {
+			if (_device_controller == DEVICE_KEYBOARD)
+				pressKey(_secondary_bindings[word][0]);
+			else if (_device_controller == DEVICE_GAMEPAD_DUALSHOCK) {
+				simultaneousPressDS4Button({ DS4_BUTTON_SHOULDER_LEFT, DS4_BUTTON_SHOULDER_RIGHT });
+			}
+			else {
+				simultaneousPressXUSBButton({ XUSB_GAMEPAD_LEFT_SHOULDER, XUSB_GAMEPAD_RIGHT_SHOULDER });
+			}
 		}
-		else if (word == "oppugno") {
-			pressKey(_secondary_bindings["oppugno"][0], 0);
-			//pressKey('W', 0);
+		else if (word == "petrificus totalus" || 
+				 word == "revelio" ||
+			     word == "oppugno" || 
+				 word == "alohomora" ||
+				 word == "protego") {
+			if (_device_controller == DEVICE_KEYBOARD)
+				pressKey(_secondary_bindings[word][0]);
+			else if (_device_controller == DEVICE_GAMEPAD_DUALSHOCK)
+				pressDS4Button(_secondary_bindings[word][0]);
+			else
+				pressXUSBButton(_secondary_bindings[word][0]);
+
 		}
-		else if (word == "alohomora") {
-			pressKey(_secondary_bindings["alohomora"][0], 0);
-		}
-		/*else
-			_is_working = true;*/
+		else 
+			std::cout << "*** Binding not found ... ***" << std::endl;
+		
+
 
 		// --- Reset of lumos status if another spell is cast
-		//std::cout << _lumos_status << " " << _is_working << 
 		if (_lumos_status && !_is_working && !lumos_cast)
 			_lumos_status = false;
 
-		//std::cout << "Lumos status : " << _lumos_status << std::endl;
 	}
 
 	return _is_working;
 }
 
 
-
+// --- Send Keyboard Inputs --- //
+//
 
 void Keybinder::pressKey(WORD key_code, int duration_ms) {
-	INPUT input = { 0 };
+	INPUT input;
+	ZeroMemory(&input, sizeof(INPUT));
 	input.type = INPUT_KEYBOARD;
 	input.ki.wVk = key_code;
 	input.ki.dwFlags = 0;
-	SendInput(1, &input, sizeof(INPUT));
-	//std::cout << "Input 1 : " << key_code << std::endl;
+
+	// Convert key code to character
+	char keyName[32];
+	if (GetKeyNameTextA(MapVirtualKey(key_code, MAPVK_VK_TO_VSC) << 16, keyName, sizeof(keyName)) == 0 ) {
+		std::cerr << "Failed to get key name for key code: " << key_code << std::endl;
+        strcpy_s(keyName, "Unknown Key");
+	}
+
+	if (SendInput(1, &input, sizeof(INPUT)) != 1) {
+		std::cerr << "Failed to send keyboard input : " << keyName << "(code: " << key_code << ")"  << std::endl;
+		return;
+	}
+	
+	
+	SHORT keyState = GetAsyncKeyState(key_code);
+	bool isPressed = (keyState & 0x8000) != 0;
+	
+	std::cout << "Input : " << keyName << " (code: " << key_code << ") -> " << isPressed << std::endl;
+	
 	//input.ki.time += duration_ms; // Set the time stamp for the key release
 	if (duration_ms != 0)
 		std::this_thread::sleep_for(std::chrono::milliseconds(duration_ms));
+	
 	input.ki.dwFlags = KEYEVENTF_KEYUP;
-	SendInput(1, &input, sizeof(INPUT));
-	//std::cout << "Input 2 : " << key_code << std::endl;
+	if (SendInput(1, &input, sizeof(INPUT)) != 1) {
+		std::cerr << "Failed to send key release event for input: " << keyName << "(code: " << key_code << ")" << std::endl;
+	}
+
 }
 
 void Keybinder::holdRightClick(int duration_ms) {
-	INPUT input = { 0 };
+	INPUT input;
+	ZeroMemory(&input, sizeof(INPUT));
 	input.type = INPUT_MOUSE;
 	input.ki.dwFlags = MOUSEEVENTF_RIGHTDOWN;
 	SendInput(1, &input, sizeof(INPUT));
@@ -520,7 +661,8 @@ void Keybinder::holdRightClick(int duration_ms) {
 }
 
 void Keybinder::combinationKey(std::vector<WORD> key_codes, int duration_ms) {
-	INPUT input = { 0 };
+	INPUT input;
+	ZeroMemory(&input, sizeof(INPUT));
 	input.type = INPUT_KEYBOARD;
 
 	// --- PRESS
@@ -556,4 +698,258 @@ void Keybinder::checkHold() {
 			++iter;
 		}
 	}
+}
+
+
+// --- Send XBOX Inputs --- //
+//
+
+void Keybinder::pressXUSBButton(WORD button, int duration_ms, bool combined) {
+	if (!combined) {
+		XUSB_REPORT_INIT(&_x360_report);
+	}
+
+	_x360_report.wButtons |= button;
+	vigem_target_x360_update(_client, _pad, _x360_report);
+	
+	if (duration_ms == 0)
+		std::this_thread::sleep_for(std::chrono::milliseconds(25)); //15
+	else
+		std::this_thread::sleep_for(std::chrono::milliseconds(duration_ms));
+
+	if(!combined) {
+		XUSB_REPORT_INIT(&_x360_report);
+		vigem_target_x360_update(_client, _pad, _x360_report);
+	} else {
+		_x360_report.wButtons ^= button;
+	}
+}
+
+void Keybinder::combinationXUSBButton(std::vector<WORD> buttons, int duration_ms) {
+	XUSB_REPORT_INIT(&_x360_report);
+
+	int press_count = 0;
+	for (WORD button : buttons) {
+		_x360_report.wButtons |= button;
+		vigem_target_x360_update(_client, _pad, _x360_report);
+
+		if (press_count != buttons.size()-1)
+			std::this_thread::sleep_for(std::chrono::milliseconds(duration_ms));
+
+		press_count++;
+	}
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(25));
+
+	XUSB_REPORT_INIT(&_x360_report);
+	vigem_target_x360_update(_client, _pad, _x360_report);
+}
+
+void Keybinder::sendXUSBPrincipalSpells(std::vector<WORD> buttons, int duration_ms) {
+	XUSB_REPORT_INIT(&_x360_report);
+
+	_x360_report.bRightTrigger = 255;
+	vigem_target_x360_update(_client, _pad, _x360_report);
+	std::this_thread::sleep_for(std::chrono::milliseconds(15));
+
+	for (const WORD& button : buttons) {
+		pressXUSBButton(button, 0, true);
+	}
+
+	XUSB_REPORT_INIT(&_x360_report);
+	vigem_target_x360_update(_client, _pad, _x360_report);
+}
+
+void Keybinder::simultaneousPressXUSBButton(std::vector<WORD> buttons, int duration_ms) {
+	XUSB_REPORT_INIT(&_x360_report);
+	for (const WORD& button : buttons) {
+		_x360_report.wButtons |= button;
+	}
+	vigem_target_x360_update(_client, _pad, _x360_report);
+
+	if (duration_ms == 0)
+		std::this_thread::sleep_for(std::chrono::milliseconds(25)); //15
+	else
+		std::this_thread::sleep_for(std::chrono::milliseconds(duration_ms));
+
+	XUSB_REPORT_INIT(&_x360_report);
+	vigem_target_x360_update(_client, _pad, _x360_report);
+}
+
+
+
+// --- Send Dualshocks Inputs --- //
+//
+
+void Keybinder::pressDS4Button(WORD button, int duration_ms, bool combined){
+	if (!combined) {
+		DS4_REPORT_INIT(&_ds4_report);
+	}
+
+	bool is_dpad = false; 
+	if (button & (
+		DS4_BUTTON_DPAD_NONE |
+		DS4_BUTTON_DPAD_NORTHWEST |
+		DS4_BUTTON_DPAD_WEST |
+		DS4_BUTTON_DPAD_SOUTHWEST |
+		DS4_BUTTON_DPAD_SOUTH |
+		DS4_BUTTON_DPAD_SOUTHEAST |
+		DS4_BUTTON_DPAD_EAST |
+		DS4_BUTTON_DPAD_NORTHEAST |
+		DS4_BUTTON_DPAD_NORTH))
+		is_dpad = true;
+
+	if (is_dpad)
+		DS4_SET_DPAD(&_ds4_report, static_cast<DS4_DPAD_DIRECTIONS>(button));
+	else
+		_ds4_report.wButtons |= button;
+
+	vigem_target_ds4_update(_client, _pad, _ds4_report);
+	
+	if (duration_ms == 0)
+		std::this_thread::sleep_for(std::chrono::milliseconds(25)); //15
+	else
+		std::this_thread::sleep_for(std::chrono::milliseconds(duration_ms));
+
+	if(!combined) {
+		DS4_REPORT_INIT(&_ds4_report);
+		vigem_target_ds4_update(_client, _pad, _ds4_report);
+	} else {
+		if (is_dpad)
+			DS4_SET_DPAD(&_ds4_report, DS4_BUTTON_DPAD_NONE);
+		else 
+			_ds4_report.wButtons ^= button;
+	}
+}
+
+void Keybinder::combinationDS4Button(std::vector<WORD> buttons, int duration_ms) {
+	DS4_REPORT_INIT(&_ds4_report);
+
+	int press_count = 0;
+	for (WORD button : buttons) {
+		if (button & (
+			DS4_BUTTON_DPAD_NONE |
+			DS4_BUTTON_DPAD_NORTHWEST |
+			DS4_BUTTON_DPAD_WEST |
+			DS4_BUTTON_DPAD_SOUTHWEST |
+			DS4_BUTTON_DPAD_SOUTH |
+			DS4_BUTTON_DPAD_SOUTHEAST |
+			DS4_BUTTON_DPAD_EAST |
+			DS4_BUTTON_DPAD_NORTHEAST |
+			DS4_BUTTON_DPAD_NORTH))
+			DS4_SET_DPAD(&_ds4_report, static_cast<DS4_DPAD_DIRECTIONS>(button));
+		else 
+			_ds4_report.wButtons |= button;
+		vigem_target_ds4_update(_client, _pad, _ds4_report);
+
+		if (press_count != buttons.size()-1)
+			std::this_thread::sleep_for(std::chrono::milliseconds(duration_ms));
+
+		press_count++;
+	}
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(25));
+
+	DS4_REPORT_INIT(&_ds4_report);
+	vigem_target_ds4_update(_client, _pad, _ds4_report);
+}
+
+void Keybinder::sendDS4PrincipalSpells(std::vector<WORD> buttons, int duration_ms) {
+	DS4_REPORT_INIT(&_ds4_report);
+
+	_ds4_report.bTriggerR = 255;
+	vigem_target_ds4_update(_client, _pad, _ds4_report);
+	std::this_thread::sleep_for(std::chrono::milliseconds(15));
+	//std::this_thread::sleep_for(std::chrono::seconds(5));
+
+	for (const WORD& button : buttons) {
+		pressDS4Button(button, 0, true);
+	}
+
+	DS4_REPORT_INIT(&_ds4_report);
+	vigem_target_ds4_update(_client, _pad, _ds4_report);
+}
+
+
+void Keybinder::simultaneousPressDS4Button(std::vector<WORD> buttons, int duration_ms) {
+	DS4_REPORT_INIT(&_ds4_report);
+	for (const WORD& button : buttons) {
+		if (button & (
+			DS4_BUTTON_DPAD_NONE |
+			DS4_BUTTON_DPAD_NORTHWEST |
+			DS4_BUTTON_DPAD_WEST |
+			DS4_BUTTON_DPAD_SOUTHWEST |
+			DS4_BUTTON_DPAD_SOUTH |
+			DS4_BUTTON_DPAD_SOUTHEAST |
+			DS4_BUTTON_DPAD_EAST |
+			DS4_BUTTON_DPAD_NORTHEAST |
+			DS4_BUTTON_DPAD_NORTH))
+			DS4_SET_DPAD(&_ds4_report, static_cast<DS4_DPAD_DIRECTIONS>(button));
+		else 
+			_ds4_report.wButtons |= button;
+	}
+	vigem_target_ds4_update(_client, _pad, _ds4_report);
+
+	if (duration_ms == 0)
+		std::this_thread::sleep_for(std::chrono::milliseconds(25)); //15
+	else
+		std::this_thread::sleep_for(std::chrono::milliseconds(duration_ms));
+
+	DS4_REPORT_INIT(&_ds4_report);
+	vigem_target_ds4_update(_client, _pad, _ds4_report);
+}
+
+
+
+// --- Auxiliary Functions --- //
+//
+
+void Keybinder::checkAllBindings() {
+	if (_device_controller == 0) {
+		std::cout << "Checking all bindings:" << std::endl;
+
+		// Check principal bindings
+		std::cout << std::endl << "\tPrincipal bindings:" << std::endl;
+		for (const auto& binding : _principal_bindings) {
+			std::cout << "\t   * " << binding.first << ": ";
+			for (const auto& key : binding.second) {
+				std::cout << getKeyName(key) << " ";
+			}
+			std::cout << std::endl;
+		}
+
+		// Check secondary bindings
+		std::cout << std::endl << "\tSecondary bindings:" << std::endl;
+		for (const auto& binding : _secondary_bindings) {
+			std::cout << "\t   * " << binding.first << ": ";
+			for (const auto& key : binding.second) {
+				std::cout << getKeyName(key) << " ";
+			}
+			std::cout << std::endl;
+		}
+
+		// Check game bindings
+		std::cout << std::endl << "\tGame bindings:" << std::endl;
+		for (const auto& binding : _game_bindings) {
+			std::cout << "\t   * " << binding.first << ": ";
+			for (const auto& key : binding.second) {
+				std::cout << getKeyName(key) << " ";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << std::endl << std::endl << std::endl;
+	}
+}
+
+
+std::string Keybinder::getKeyName(WORD key_code) {
+	char keyName[32];
+	UINT scanCode = MapVirtualKey(key_code, MAPVK_VK_TO_VSC);
+	LONG lParam = (scanCode << 16);
+
+	if (GetKeyNameTextA(lParam, keyName, sizeof(keyName)) == 0) {
+		return "Unknown Key";
+	}
+
+	return std::string(keyName);
 }

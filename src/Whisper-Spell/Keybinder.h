@@ -12,14 +12,30 @@
 #include <sstream>
 #include <Windows.h>
 #include <winuser.h>
+#include <ViGEm/Client.h>
+#include <SDL.h>
 
 #include "Tools.h"
+
+
+#define DEVICE_KEYBOARD 0
+#define DEVICE_GAMEPAD_UNDEFINED 1
+#define DEVICE_GAMEPAD_DUALSHOCK 2
+#define DEVICE_GAMEPAD_XBOX 3
+#define DEVICE_GAMEPAD_UNKNOWN 4
+
+#define UNDEFINED_BINDING 0xFFFF
+
 
 //https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
 
 const std::vector<std::string> NEED_TO_WAIT{"accio"};
 
-const std::map<std::string, WORD> unrealKeyMap = {
+
+// --- Hogwarts Legacy Bindings Conversion
+//
+
+const std::unordered_map<std::string, WORD> unrealKeyMap = {
     {"None", 0},
     {"LeftMouseButton", VK_LBUTTON},
     {"RightMouseButton", VK_RBUTTON},
@@ -145,8 +161,45 @@ const std::map<std::string, WORD> unrealKeyMap = {
     {"Unknown", VK_OEM_8},
 };
 
+const std::unordered_map<std::string, WORD> xusb_gamepadButtonMap = {
+    {"Gamepad_FaceButton_Bottom", XUSB_GAMEPAD_A},
+    {"Gamepad_FaceButton_Right", XUSB_GAMEPAD_B},
+    {"Gamepad_FaceButton_Left", XUSB_GAMEPAD_X},
+    {"Gamepad_FaceButton_Top", XUSB_GAMEPAD_Y},
+    {"Gamepad_Special_Left", XUSB_GAMEPAD_BACK},
+    {"Gamepad_Special_Right", XUSB_GAMEPAD_START},
+    {"Gamepad_LeftShoulder", XUSB_GAMEPAD_LEFT_SHOULDER},
+    {"Gamepad_RightShoulder", XUSB_GAMEPAD_RIGHT_SHOULDER},
+    {"Gamepad_LeftThumbstick", XUSB_GAMEPAD_LEFT_THUMB},
+    {"Gamepad_RightThumbstick", XUSB_GAMEPAD_RIGHT_THUMB},
+    {"Gamepad_DPad_Up", XUSB_GAMEPAD_DPAD_UP},
+    {"Gamepad_DPad_Down", XUSB_GAMEPAD_DPAD_DOWN},
+    {"Gamepad_DPad_Left", XUSB_GAMEPAD_DPAD_LEFT},
+    {"Gamepad_DPad_Right", XUSB_GAMEPAD_DPAD_RIGHT}
+};
 
-const std::map<std::string, std::vector<WORD>> defaultBinding = {
+const std::unordered_map<std::string, WORD> ds4_gamepadButtonMap = {
+    {"Gamepad_FaceButton_Bottom", DS4_BUTTON_CROSS},
+    {"Gamepad_FaceButton_Right", DS4_BUTTON_CIRCLE},
+    {"Gamepad_FaceButton_Left", DS4_BUTTON_SQUARE},
+    {"Gamepad_FaceButton_Top", DS4_BUTTON_TRIANGLE},
+    {"Gamepad_Special_Left", DS4_BUTTON_SHARE},
+    {"Gamepad_Special_Right", DS4_BUTTON_OPTIONS},
+    {"Gamepad_LeftShoulder", DS4_BUTTON_SHOULDER_LEFT},
+    {"Gamepad_RightShoulder", DS4_BUTTON_SHOULDER_RIGHT},
+    {"Gamepad_LeftThumbstick", DS4_BUTTON_THUMB_LEFT},
+    {"Gamepad_RightThumbstick", DS4_BUTTON_THUMB_RIGHT},
+    {"Gamepad_DPad_Up", DS4_BUTTON_DPAD_NORTH},
+    {"Gamepad_DPad_Down", DS4_BUTTON_DPAD_SOUTH},
+    {"Gamepad_DPad_Left", DS4_BUTTON_DPAD_WEST},
+    {"Gamepad_DPad_Right", DS4_BUTTON_DPAD_EAST}
+};
+
+
+// --- Default Bindings
+//
+
+const std::unordered_map<std::string, std::vector<WORD>> defaultBinding = {
     {"columns", { 0x31, 0x32, 0x33, 0x34 }},
     {"lines", { VK_F1, VK_F2, VK_F3, VK_F4 }},
     {"accio broomstick", { VK_TAB , 0x33 }},
@@ -155,8 +208,37 @@ const std::map<std::string, std::vector<WORD>> defaultBinding = {
     {"protego", {'A'}},
     {"appare vestigium", {'V'}},
     {"petrificus totalus", {'F'}},
-    {"oppugno", {'W'}}
+    {"oppugno", {'W'}},
+    {"alohomora", {'F'}}
 };
+
+const std::unordered_map<std::string, std::vector<WORD>> defaultXUSBBinding = {
+    {"columns", { XUSB_GAMEPAD_Y, XUSB_GAMEPAD_B, XUSB_GAMEPAD_A, XUSB_GAMEPAD_X }},
+    {"lines", { XUSB_GAMEPAD_DPAD_UP, XUSB_GAMEPAD_DPAD_RIGHT, XUSB_GAMEPAD_DPAD_DOWN, XUSB_GAMEPAD_DPAD_LEFT }},
+    {"accio broomstick", { XUSB_GAMEPAD_LEFT_SHOULDER, XUSB_GAMEPAD_B }},
+    {"smash", { XUSB_GAMEPAD_LEFT_SHOULDER }},
+    {"revelio", { XUSB_GAMEPAD_DPAD_LEFT }},
+    {"protego", { XUSB_GAMEPAD_Y }},
+    {"appare vestigium", { XUSB_GAMEPAD_DPAD_UP }},
+    {"petrificus totalus", { XUSB_GAMEPAD_X }},
+    {"oppugno", { XUSB_GAMEPAD_RIGHT_SHOULDER }},
+    {"alohomora", {XUSB_GAMEPAD_X}}
+};
+
+const std::unordered_map<std::string, std::vector<WORD>> defaultDS4Binding = {
+    {"columns", { DS4_BUTTON_TRIANGLE, DS4_BUTTON_CIRCLE, DS4_BUTTON_CROSS, DS4_BUTTON_SQUARE }},
+    {"lines", { DS4_BUTTON_DPAD_NORTH, DS4_BUTTON_DPAD_EAST, DS4_BUTTON_DPAD_SOUTH, DS4_BUTTON_DPAD_WEST }},
+    {"accio broomstick", { DS4_BUTTON_SHOULDER_LEFT, DS4_BUTTON_CIRCLE }},
+    {"smash", { DS4_BUTTON_SHOULDER_LEFT }},
+    {"revelio", { DS4_BUTTON_DPAD_WEST }},
+    {"protego", { DS4_BUTTON_TRIANGLE }},
+    {"appare vestigium", { DS4_BUTTON_DPAD_NORTH }},
+    {"petrificus totalus", { DS4_BUTTON_SQUARE }},
+    {"oppugno", { DS4_BUTTON_SHOULDER_RIGHT }},
+    {"alohomora", {DS4_BUTTON_SQUARE}}
+};
+
+
 
 
 
@@ -166,25 +248,58 @@ public:
 	Keybinder(std::string conf_path);
 	~Keybinder();
 
-    std::map<std::string, std::vector<WORD>> loadGameBindings();
-    void loadConfBindings(const std::string& conf_path, const std::map<std::string, std::vector<WORD>>& game_bindings);
+
+    void selectingGamepad(); 
+
+    std::unordered_map<std::string, std::vector<WORD>> loadGameBindings();
+    void loadConfBindings(const std::string& conf_path, const std::unordered_map<std::string, std::vector<WORD>>& game_bindings);
+
+    WORD keyToBind(const std::string& key);
+    bool updateBinding(std::unordered_map<std::string, std::vector<WORD>>& binding, const std::string& actionName, const std::string& key);
 
 	bool decode(const std::string& word, const bool& final_record = false);
 	void start();
 	void stop();
 
+    // --- Keyboard inputs --- //
+    //
 	void pressKey(WORD key_code, int duration_ms = 0);
 	void combinationKey(std::vector<WORD> key_codes, int duration_ms = 0);
 	void holdRightClick(int duration_ms = 0);
 
 	void checkHold();
+
+    // --- Dualshocks inputs --- //
+    //
+    void pressXUSBButton(WORD button, int duration_ms = 0, bool combined = false);
+    void combinationXUSBButton(std::vector<WORD> buttons, int duration_ms = 0);
+    void sendXUSBPrincipalSpells(std::vector<WORD> buttons, int duration_ms = 0);
+    void simultaneousPressXUSBButton(std::vector<WORD> buttons, int duration_ms = 0);
+
+    // --- Xbox inputs --- //
+    //
+    void pressDS4Button(WORD button, int duration_ms = 0, bool combined = false);
+    void combinationDS4Button(std::vector<WORD> buttons, int duration_ms = 0);
+    void sendDS4PrincipalSpells(std::vector<WORD> buttons, int duration_ms = 0);
+    void simultaneousPressDS4Button(std::vector<WORD> buttons, int duration_ms = 0);
+
+
+    void checkAllBindings();
+    std::string getKeyName(WORD key_code);
+
 private:
+    int _device_controller;
 	bool _is_working, _lumos_status;
 	std::vector<std::future<void>> _hold_thread;
-    std::map<std::string, std::vector<WORD>> _game_bindings;
-	std::map<std::string, std::vector<WORD>> _principal_bindings, _secondary_bindings;
+    std::unordered_map<std::string, std::vector<WORD>> _game_bindings;
+	std::unordered_map<std::string, std::vector<WORD>> _principal_bindings, _secondary_bindings;
     std::string _conf_path;
     std::size_t _conf_hash;
+
+    PVIGEM_CLIENT _client;
+    PVIGEM_TARGET _pad;
+    DS4_REPORT    _ds4_report;
+    XUSB_REPORT   _x360_report;
 };
 
 #endif // !DEF_KEYBINDER
