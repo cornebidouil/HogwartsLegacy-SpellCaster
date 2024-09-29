@@ -15,7 +15,7 @@
 
 4. **Configure Your Keybindings:**
    - Open the `keybinding.txt` file.
-   - Organize your spellbars according to the game's setup. Ensure the first line remains unchanged as it serves as a format example (remove any uppercase letter in spells names).
+   - Organize your spellbars according to the game's setup. 4 lines for 4 spellbars, 4 columns for 4 spells (separated by a ; )
 
 ## Supported Spells
 
