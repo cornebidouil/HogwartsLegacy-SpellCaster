@@ -7,10 +7,13 @@
 1. **Launch the Executable:**
    - Run the provided `Whisper-Spell.exe` file to start the program.
 
-2. **Choose Your Microphone Device:**
+2. **Choose Your Input Device:**
+   - Select the device you are playing with: keyboard / gamepad.
+
+3. **Choose Your Microphone Device:**
    - Select the microphone you want to use for voice recognition.
 
-3. **Configure Your Keybindings:**
+4. **Configure Your Keybindings:**
    - Open the `keybinding.txt` file.
    - Organize your spellbars according to the game's setup. Ensure the first line remains unchanged as it serves as a format example (remove any uppercase letter in spells names).
 
@@ -67,8 +70,9 @@ This project relies on the following open-source projects:
 - **[whisper.cpp](https://github.com/ggerganov/whisper.cpp)**: A high-performance implementation of OpenAI's Whisper model for speech recognition.
 - **[silero-vad](https://github.com/snakers4/silero-vad)**: A powerful Voice Activity Detection (VAD) tool that helps in identifying when speech is present in an audio stream.
 - **[PortAudio](https://github.com/PortAudio/portaudio)**: A portable audio library designed to provide consistent audio input/output across various platforms.
+- **[ViGEmClient](https://github.com/nefarius/ViGEmClient)**: A powerful library to create virtual game controllers.
 
-I highly recommend checking out these projects if you're interested in speech recognition, voice activity detection, and audio processing!
+I highly recommend checking out these projects if you're interested in speech recognition, voice activity detection, audio processing, and virtualization of game controllers!
 
 ## Support the Project
 
