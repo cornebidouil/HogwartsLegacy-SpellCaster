@@ -1,0 +1,60 @@
+# ---- Build output -----------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+out/
+Output/
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.aps
+*.VC.db
+*.VC.opendb
+*.ilk
+*.pdb
+*.ipdb
+*.iobj
+*.obj
+*.pch
+*.tlog
+*.log
+*.tmp
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# ---- Binaries and models (distributed through GitHub Releases) -------------
+*.dll
+*.exe
+*.lib
+*.exp
+*.bin
+*.onnx
+*.ort
+*.zip
+*.7z
+
+# ---- Third-party sources cloned next to the mod (see ue4ss-mod/README.md) --
+ue4ss-mod/RE-UE4SS/
+external/
+
+# ---- Per-machine build settings (see BUILDING.md) --------------------------
+app/Dependencies.local.props
+
+# ---- Runtime state written by the application ------------------------------
+device_name.txt
+*.ini.bak
+
+# ---- Python -----------------------------------------------------------------
+__pycache__/
+*.pyc
+
+# ---- OS noise ---------------------------------------------------------------
+Thumbs.db
+.DS_Store
