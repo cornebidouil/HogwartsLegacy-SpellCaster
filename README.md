@@ -1,95 +1,110 @@
 # Hogwarts Legacy SpellCaster
 
-**Hogwarts Legacy Spellcaster** is a speech recognition tool designed to enhance your gameplay experience in Hogwarts Legacy. By recognizing your voice commands, it automatically casts spells in the game, making your wizarding journey even more immersive.
+Cast spells in Hogwarts Legacy with your voice. Say *"Incendio"* and the spell
+is cast, whatever is on your spell bar.
 
-## How It Works
+SpellCaster listens to your microphone, recognises the incantation with a
+speech model fine-tuned on the spell vocabulary, and casts the spell inside the
+game through a [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) mod. Everything
+runs locally on your machine.
 
-1. **Launch the Executable:**
-   - Run the provided `Whisper-Spell.exe` file to start the program.
+*Version française : [README-FR.md](README-FR.md).*
 
-2. **Choose Your Input Device:**
-   - Select the device you are playing with: keyboard / gamepad.
+## How it works
 
-3. **Choose Your Microphone Device:**
-   - Select the microphone you want to use for voice recognition.
+```
+ microphone ─► desktop application ─► shared memory ─► UE4SS mod ─► game
+              (VAD + Whisper or Moonshine)             (casts via WandTool)
+```
 
-4. **Configure Your Keybindings:**
-   - Open the `keybinding.txt` file.
-   - Organize your spellbars according to the game's setup. 4 lines for 4 spellbars, 4 columns for 4 spells (separated by a ; )
+The desktop application does the listening and the recognition. It forwards
+each recognised spell name to the mod, which casts it through the game's own
+spell system. Because the mod drives
+the game logic directly, there is no key binding or controller layout to
+configure.
 
-## Supported Spells
+Two older output paths are still available for setups without the mod: a
+virtual Xbox controller (ViGEm) that presses the buttons of your spell bar, and
+a [UEVR](https://github.com/praydog/UEVR) plugin for VR play.
 
-- **Accio broomstick / balais**
-- **Smash**
-- **Revelio**
-- **Protego**
-- **Appare Vestigium**
-- **Petrificus Totalus**
-- **Oppugno**
-- **Alohomora**
-- **Accio**
-- **Descendo**
-- **Depulso**
-- **Flipendo**
-- **Levioso**
-- **Glacius**
-- **Arresto Momentum**
-- **Incendio**
-- **Bombarda**
-- **Expelliarmus**
-- **Confringo**
-- **Diffindo**
-- **Imperio**
-- **Avada Kedavra**
-- **Crucio**
-- **Wingardium Leviosa**
-- **Lumos**
-- **Nox**
-- **Reparo**
+## For players
 
-> **Note:** The spell "Metamorphosis" is not supported at this time, as well as "Evanesco". Any other suggestion is welcomed !
+1. Download the latest `HogwartsLegacy-SpellCaster-win-x64-<version>.zip` from
+   the [Releases](https://github.com/pierre-cheneau/HogwartsLegacy-SpellCaster/releases)
+   page and unzip it anywhere.
+2. Run `HogwartsLegacy-SpellCaster.exe`. On first start it asks which microphone
+   to use, whether you want to contribute recordings to improve the models, and
+   installs UE4SS and the SpellCaster mod into your game folder. Steam
+   installations are found automatically; otherwise set `game_path` in
+   `config.ini` to your `Hogwarts Legacy\Phoenix\Binaries\Win64` folder.
+3. Start the game, load a save, and speak.
 
-### Special Spells
+Requirements: Windows 10 or 11, 64-bit, a microphone. Recognition runs on the
+CPU by default; a Vulkan-capable GPU speeds up the Whisper engine. Choose the
+engine with `engine=whisper` or `engine=moonshine` in `config.ini`.
 
-In addition to the standard spells, the program supports a variety of special commands:
+The `spellbook` folder in the release shows every recognised phrase with its
+pronunciation. If something does not work, the console output of the
+application and `UE4SS_Logs\UE4SS.log` in the game folder tell most of the
+story; bring them to the Discord linked below.
 
-- **Nox** (deactivates Lumos)
-- **Smash** (activates Ancient Magic)
-- **Appare Vestigium** (reveals your current quest)
-- **Alohomora** (unlocks doors)
-- **Accio Broomstick** / **Balais** (summons your broomstick)
-- **Revelio** (reveals points of interest)
-- **Petrificus Totalus** (neutralizes enemies)
-- **Oppugno** (launches objects at enemies)
-- **Dissipate** (launch desilusion spell)
+## Spells
 
-## Acknowledgments
+Everything the mod can cast is listed in `ue4ss-mod/SpellCasterMod/dllmain.cpp`.
+In short:
 
-This project relies on the following open-source projects:
+| Group | Spells |
+|-------|--------|
+| Control | Accio, Levioso, Depulso, Descendo, Flipendo, Glacius, Arresto Momentum |
+| Damage | Incendio, Confringo, Diffindo, Bombarda |
+| Combat | Stupefy, Expelliarmus, Protego, Oppugno |
+| Utility | Lumos, Nox, Reparo, Revelio, Invisica (Disillusionment), Wingardium Leviosa |
+| Transfiguration | Transfigura Verto, Conjuration, Vanishment |
+| Unforgivable | Avada Kedavra, Crucio, Imperio |
+| Special | Smash (ancient magic), Stealth Takedown, Confundo, Episkey |
+| Actions | Finite, Appare Vestigium, Accio Broomstick / Balais, Accio Mount / Hippogriff / Graphorn / Thestral |
+| Menus | Apperta Codex, Meritas, Falcultates, Quaestiones, Mappa, Literae, Compendium, Incantatem, Configuratio |
+| Community spell packs | SpellsEnhanced, HRBSpellPack, HermitHollow and others, when installed |
 
-- **[whisper.cpp](https://github.com/ggerganov/whisper.cpp)**: A high-performance implementation of OpenAI's Whisper model for speech recognition.
-- **[silero-vad](https://github.com/snakers4/silero-vad)**: A powerful Voice Activity Detection (VAD) tool that helps in identifying when speech is present in an audio stream.
-- **[PortAudio](https://github.com/PortAudio/portaudio)**: A portable audio library designed to provide consistent audio input/output across various platforms.
-- **[ViGEmClient](https://github.com/nefarius/ViGEmClient)**: A powerful library to create virtual game controllers.
+## Repository layout
 
-I highly recommend checking out these projects if you're interested in speech recognition, voice activity detection, audio processing, and virtualization of game controllers!
+| Folder | Content |
+|--------|---------|
+| `app/` | Desktop application (Visual Studio 2022, C++20): audio capture, VAD, Whisper and Moonshine engines, UE4SS installer, crowdsourcing client |
+| `ue4ss-mod/` | UE4SS C++ mod that casts the spells, plus a Python tool to drive it without a microphone |
+| `uevr-plugin/` | UEVR plugin for the VR controller path |
+| `docs/` | Inter-process protocol, audio debug mode, known issues |
 
-## Support the Project
+- Building any of the three: [BUILDING.md](BUILDING.md)
+- Adding spells or otherwise contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
+- How the application talks to the mod: [docs/ipc-protocol.md](docs/ipc-protocol.md)
+- What is known to need work: [docs/known-issues.md](docs/known-issues.md)
+- Licences of everything bundled: [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)
 
-This project was created by **Cornebidouil**. If you have any questions, feedback, or just want to connect, feel free to reach out!
+## Releases
 
-- **GitHub**: [My GitHub Profile](https://github.com/cornebidouil)
+| Version | Date | Highlights |
+|---------|------|-----------|
+| 1.8.0 beta | 2026-01-26 | Moonshine engine, UE4SS mod with direct casting, crowdsourcing |
+| 1.7.0 | 2025-09-05 | VR support through UEVR |
+| 1.6.x | 2025-06 to 2025-08 | Audio device selection, resampling |
+| 1.3 to 1.5 | 2025-02 to 2025-03 | Configuration file, spellbook, Vulkan and OpenVINO backends |
+| 1.1.0 | 2024-09-09 | Gamepad support, all graphics cards |
+| 1.0.0 | 2024-08-22 | First release |
 
-If you enjoy this project and would like to support its development :
+## Community and support
 
-**ETH Wallet Address:** `0x1F61fa7923d5E914A5Fdf36B584a1336fde20721`
+Created by **Cornebidouil**. Questions, feedback and recordings for the models
+are all welcome:
 
-## Join Our Discord Community
+- Discord: <https://discord.gg/zE4NRsTGdw>
+- Training portal (help improve recognition): <http://hogwartslegacyspellcaster.xyz>
+- GitHub: <https://github.com/pierre-cheneau>
 
-We invite you to join our Discord community to share your experiences, exchange tips, and discuss everything related to **Hogwarts Legacy Spellcaster**. We would love to have you there!
+If you enjoy the project and want to support its development:
+ETH `0x1F61fa7923d5E914A5Fdf36B584a1336fde20721`
 
-[Join us on Discord](https://discord.gg/zE4NRsTGdw)
+## Licence
 
----
-
-Thank you for your support and happy spellcasting!
+MIT, see [LICENSE](LICENSE). Hogwarts Legacy is a trademark of Warner Bros.
+Entertainment Inc.; this is an independent fan project.
