@@ -1,4 +1,0 @@
-lumos;arresto momentum;glacius;levioso
-accio;depulso;descendo;flipendo
-confringo;diffindo;expelliarmus;bombarda
-dissipate;wingardium leviosa;reparo;none
