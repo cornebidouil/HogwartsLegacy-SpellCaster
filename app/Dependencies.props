@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Locations of the third-party SDKs the application builds against.
+
+  Every path below is a default that can be overridden per machine by creating
+  app\Dependencies.local.props (ignored by git). Copy Dependencies.local.props.example
+  to get started. Only the properties you define in the local file are overridden;
+  everything else falls back to the defaults, which expect the dependencies to be
+  unpacked side by side in <repo>\external\.
+
+  See BUILDING.md for the versions each dependency was last built with.
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="Dependencies.local.props" Condition="exists('$(MSBuildThisFileDirectory)Dependencies.local.props')" />
+
+  <PropertyGroup Label="UserMacros">
+    <!-- Root folder holding all dependencies when no per-machine override is given -->
+    <ExternalDir Condition="'$(ExternalDir)' == ''">$(MSBuildThisFileDirectory)..\external\</ExternalDir>
+
+    <!-- whisper.cpp: speech recognition (headers at the repository root, whisper.lib from a CMake Release build) -->
+    <WhisperCppDir Condition="'$(WhisperCppDir)' == ''">$(ExternalDir)whisper.cpp\</WhisperCppDir>
+    <WhisperCppLib Condition="'$(WhisperCppLib)' == ''">$(WhisperCppDir)build\Release\whisper.lib</WhisperCppLib>
+
+    <!-- Moonshine C++ runtime (moonshine-v2 repository root) with its bundled TEN VAD and ONNX Runtime -->
+    <MoonshineDir Condition="'$(MoonshineDir)' == ''">$(ExternalDir)moonshine-v2\</MoonshineDir>
+    <MoonshineLibs Condition="'$(MoonshineLibs)' == ''">$(MoonshineDir)build\Release\moonshine.lib;$(MoonshineDir)core\moonshine-utils\build\Release\moonshine-utils.lib;$(MoonshineDir)core\bin-tokenizer\build\Release\bin-tokenizer.lib;$(MoonshineDir)core\ort-utils\build\Release\ort-utils.lib;$(MoonshineDir)core\third-party\ten_vad\build\Release\ten_vad.lib;$(MoonshineDir)core\third-party\onnxruntime\lib\onnxruntime.lib</MoonshineLibs>
+
+    <!-- ONNX Runtime headers used by the Silero VAD wrapper (prebuilt onnxruntime-win-x64 package) -->
+    <OnnxRuntimeDir Condition="'$(OnnxRuntimeDir)' == ''">$(ExternalDir)onnxruntime-win-x64\</OnnxRuntimeDir>
+    <OnnxRuntimeLib Condition="'$(OnnxRuntimeLib)' == ''">$(OnnxRuntimeDir)lib\onnxruntime.lib</OnnxRuntimeLib>
+
+    <!-- PortAudio: microphone capture -->
+    <PortAudioDir Condition="'$(PortAudioDir)' == ''">$(ExternalDir)portaudio\</PortAudioDir>
+    <PortAudioLib Condition="'$(PortAudioLib)' == ''">$(PortAudioDir)build\Release\portaudio_x64.lib</PortAudioLib>
+
+    <!-- SDL2: gamepad enumeration (prebuilt SDL2-devel VC package) -->
+    <SDL2Dir Condition="'$(SDL2Dir)' == ''">$(ExternalDir)SDL2\</SDL2Dir>
+
+    <!-- ViGEm client SDK: virtual Xbox controller -->
+    <ViGEmSdkDir Condition="'$(ViGEmSdkDir)' == ''">$(ExternalDir)ViGEmBus\sdk\</ViGEmSdkDir>
+
+    <!-- SoX Resampler library -->
+    <SoxrDir Condition="'$(SoxrDir)' == ''">$(ExternalDir)soxr\</SoxrDir>
+    <SoxrLib Condition="'$(SoxrLib)' == ''">$(SoxrDir)build\src\Release\soxr.lib</SoxrLib>
+
+    <!-- AMD ROCm SDK: HIP / hipBLAS device detection -->
+    <ROCmDir Condition="'$(ROCmDir)' == ''">C:\Program Files\AMD\ROCm\6.1\</ROCmDir>
+
+    <!-- NVIDIA CUDA Toolkit version whose MSBuild integration is imported (device detection) -->
+    <SpellCasterCudaVersion Condition="'$(SpellCasterCudaVersion)' == ''">13.1</SpellCasterCudaVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <BuildMacro Include="ExternalDir"><Value>$(ExternalDir)</Value></BuildMacro>
+    <BuildMacro Include="WhisperCppDir"><Value>$(WhisperCppDir)</Value></BuildMacro>
+    <BuildMacro Include="MoonshineDir"><Value>$(MoonshineDir)</Value></BuildMacro>
+    <BuildMacro Include="OnnxRuntimeDir"><Value>$(OnnxRuntimeDir)</Value></BuildMacro>
+    <BuildMacro Include="PortAudioDir"><Value>$(PortAudioDir)</Value></BuildMacro>
+    <BuildMacro Include="SDL2Dir"><Value>$(SDL2Dir)</Value></BuildMacro>
+    <BuildMacro Include="ViGEmSdkDir"><Value>$(ViGEmSdkDir)</Value></BuildMacro>
+    <BuildMacro Include="SoxrDir"><Value>$(SoxrDir)</Value></BuildMacro>
+    <BuildMacro Include="ROCmDir"><Value>$(ROCmDir)</Value></BuildMacro>
+  </ItemGroup>
+</Project>

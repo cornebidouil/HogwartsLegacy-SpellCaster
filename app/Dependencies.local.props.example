@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Per-machine dependency locations.
+
+  Copy this file to Dependencies.local.props (same folder, ignored by git) and
+  point the properties at your own SDK folders. Any property you leave out keeps
+  the default from Dependencies.props. Directory paths must end with a backslash.
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="UserMacros">
+    <WhisperCppDir>D:\SDK\whisper.cpp\</WhisperCppDir>
+    <MoonshineDir>D:\SDK\moonshine-v2\</MoonshineDir>
+    <OnnxRuntimeDir>D:\SDK\onnxruntime-win-x64-1.18.1\</OnnxRuntimeDir>
+    <PortAudioDir>D:\SDK\portaudio\</PortAudioDir>
+    <SDL2Dir>D:\SDK\SDL2-2.30.7\</SDL2Dir>
+    <ViGEmSdkDir>D:\SDK\ViGEmBus\sdk\</ViGEmSdkDir>
+    <SoxrDir>D:\SDK\soxr\</SoxrDir>
+    <ROCmDir>C:\Program Files\AMD\ROCm\6.1\</ROCmDir>
+    <SpellCasterCudaVersion>13.1</SpellCasterCudaVersion>
+  </PropertyGroup>
+</Project>

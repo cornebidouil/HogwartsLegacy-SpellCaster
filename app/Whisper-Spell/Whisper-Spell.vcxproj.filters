@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Source Files\Crowdsourcing">
+      <UniqueIdentifier>{0F8FAD5B-D9CB-469F-A165-70867728950E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Crowdsourcing">
+      <UniqueIdentifier>{7C9E6679-7425-40DE-944B-E07FC1F90AE7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Third Party">
+      <UniqueIdentifier>{16FD2706-8BAF-433B-82EB-8C7FADA847DA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Configuration">
+      <UniqueIdentifier>{9B3F0E2A-6D1C-4A7E-9F5B-2C8D4E1F0A3B}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CrowdsourcingClient.cpp">
+      <Filter>Source Files\Crowdsourcing</Filter>
+    </ClCompile>
+    <ClCompile Include="CrowdsourcingManager.cpp">
+      <Filter>Source Files\Crowdsourcing</Filter>
+    </ClCompile>
+    <ClCompile Include="CrowdsourcingStorage.cpp">
+      <Filter>Source Files\Crowdsourcing</Filter>
+    </ClCompile>
+    <ClCompile Include="CrowdsourcingUtils.cpp">
+      <Filter>Source Files\Crowdsourcing</Filter>
+    </ClCompile>
+    <ClCompile Include="FirstRunDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inih\ini.c">
+      <Filter>Third Party</Filter>
+    </ClCompile>
+    <ClCompile Include="inih\INIReader.cpp">
+      <Filter>Third Party</Filter>
+    </ClCompile>
+    <ClCompile Include="Keybinder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="miniz\miniz.c">
+      <Filter>Third Party</Filter>
+    </ClCompile>
+    <ClCompile Include="miniz\miniz_tdef.c">
+      <Filter>Third Party</Filter>
+    </ClCompile>
+    <ClCompile Include="miniz\miniz_tinfl.c">
+      <Filter>Third Party</Filter>
+    </ClCompile>
+    <ClCompile Include="miniz\miniz_zip.c">
+      <Filter>Third Party</Filter>
+    </ClCompile>
+    <ClCompile Include="SpellTransmitter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Tools.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UE4SSInstaller.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VRInputHandler_SharedMemory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VRSharedMemoryServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WhisperTranscriber.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Audio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ControllerUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CrowdsourcingClient.h">
+      <Filter>Header Files\Crowdsourcing</Filter>
+    </ClInclude>
+    <ClInclude Include="CrowdsourcingManager.h">
+      <Filter>Header Files\Crowdsourcing</Filter>
+    </ClInclude>
+    <ClInclude Include="CrowdsourcingStorage.h">
+      <Filter>Header Files\Crowdsourcing</Filter>
+    </ClInclude>
+    <ClInclude Include="CrowdsourcingUtils.h">
+      <Filter>Header Files\Crowdsourcing</Filter>
+    </ClInclude>
+    <ClInclude Include="cuda_tools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DllUtilities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FirstRunDialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HidHideControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inih\ini.h">
+      <Filter>Third Party</Filter>
+    </ClInclude>
+    <ClInclude Include="inih\INIReader.h">
+      <Filter>Third Party</Filter>
+    </ClInclude>
+    <ClInclude Include="InputRedirector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InteractiveMenu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ITranscriber.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Keybinder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="miniz\miniz.h">
+      <Filter>Third Party</Filter>
+    </ClInclude>
+    <ClInclude Include="miniz\miniz_common.h">
+      <Filter>Third Party</Filter>
+    </ClInclude>
+    <ClInclude Include="miniz\miniz_export.h">
+      <Filter>Third Party</Filter>
+    </ClInclude>
+    <ClInclude Include="miniz\miniz_tdef.h">
+      <Filter>Third Party</Filter>
+    </ClInclude>
+    <ClInclude Include="miniz\miniz_tinfl.h">
+      <Filter>Third Party</Filter>
+    </ClInclude>
+    <ClInclude Include="miniz\miniz_zip.h">
+      <Filter>Third Party</Filter>
+    </ClInclude>
+    <ClInclude Include="MoonshineTranscriber.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PreferencePrompt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SecretStore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SharedMemoryStructure.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SileroVAD.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SpellTransmitter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadPool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Tools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UE4SSInstaller.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VRInputHandler_SharedMemory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VRPipeInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VRSharedMemoryServer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WhisperTranscriber.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="config.ini">
+      <Filter>Configuration</Filter>
+    </None>
+    <None Include="keybinding.txt">
+      <Filter>Configuration</Filter>
+    </None>
+    <None Include="..\Dependencies.props">
+      <Filter>Configuration</Filter>
+    </None>
+  </ItemGroup>
+</Project>

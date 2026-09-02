@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{a4d65483-00f8-40d6-b580-1fe7b5c4547a}</ProjectGuid>
+    <RootNamespace>WhisperSpell</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <!-- Dependency locations; per-machine overrides live in ..\Dependencies.local.props -->
+  <Import Project="..\Dependencies.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA $(SpellCasterCudaVersion).props" Condition="exists('$(VCTargetsPath)\BuildCustomizations\CUDA $(SpellCasterCudaVersion).props')" />
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <TargetName>HogwartsLegacy-SpellCaster</TargetName>
+  </PropertyGroup>
+  <!--
+    Release|x64 is the configuration shipped in releases.
+    Debug|x64 is a reduced configuration kept for stepping through the audio and
+    input code; it links the Release third-party libraries and does not include
+    the Moonshine engine.
+  -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;INI_MAX_LINE=4096;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(PortAudioDir)include;$(WhisperCppDir);$(OnnxRuntimeDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(PortAudioLib);$(WhisperCppLib);$(OnnxRuntimeLib);%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WITH_WHISPER;WITH_MOONSHINE;NDEBUG;_CONSOLE;INI_MAX_LINE=4096;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(WhisperCppDir);$(OnnxRuntimeDir)include;$(MoonshineDir)core;$(MoonshineDir)core\ort-utils;$(MoonshineDir)core\bin-tokenizer;$(MoonshineDir)core\moonshine-utils;$(MoonshineDir)core\third-party\ten_vad;$(MoonshineDir)core\third-party\onnxruntime\include;$(PortAudioDir)include;$(ROCmDir)include;$(SDL2Dir)include;$(ViGEmSdkDir)include;$(SoxrDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(WhisperCppLib);$(PortAudioLib);$(MoonshineLibs);$(ROCmDir)lib\hipblas.lib;$(ROCmDir)lib\amdhip64.lib;$(SDL2Dir)lib\x64\SDL2.lib;$(SDL2Dir)lib\x64\SDL2main.lib;$(ViGEmSdkDir)bin\release\x64\ViGEmClient.lib;$(SoxrLib);%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="CrowdsourcingClient.cpp" />
+    <ClCompile Include="CrowdsourcingManager.cpp" />
+    <ClCompile Include="CrowdsourcingStorage.cpp" />
+    <ClCompile Include="CrowdsourcingUtils.cpp" />
+    <ClCompile Include="FirstRunDialog.cpp" />
+    <ClCompile Include="inih\ini.c" />
+    <ClCompile Include="inih\INIReader.cpp" />
+    <ClCompile Include="Keybinder.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="miniz\miniz.c" />
+    <ClCompile Include="miniz\miniz_tdef.c" />
+    <ClCompile Include="miniz\miniz_tinfl.c" />
+    <ClCompile Include="miniz\miniz_zip.c" />
+    <ClCompile Include="SpellTransmitter.cpp" />
+    <ClCompile Include="Tools.cpp" />
+    <ClCompile Include="UE4SSInstaller.cpp" />
+    <ClCompile Include="VRInputHandler_SharedMemory.cpp" />
+    <ClCompile Include="VRSharedMemoryServer.cpp" />
+    <ClCompile Include="WhisperTranscriber.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Audio.h" />
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="ControllerUtils.h" />
+    <ClInclude Include="CrowdsourcingClient.h" />
+    <ClInclude Include="CrowdsourcingManager.h" />
+    <ClInclude Include="CrowdsourcingStorage.h" />
+    <ClInclude Include="CrowdsourcingUtils.h" />
+    <ClInclude Include="cuda_tools.h" />
+    <ClInclude Include="DllUtilities.h" />
+    <ClInclude Include="FirstRunDialog.h" />
+    <ClInclude Include="HidHideControl.h" />
+    <ClInclude Include="inih\ini.h" />
+    <ClInclude Include="inih\INIReader.h" />
+    <ClInclude Include="InputRedirector.h" />
+    <ClInclude Include="InteractiveMenu.h" />
+    <ClInclude Include="ITranscriber.h" />
+    <ClInclude Include="Keybinder.h" />
+    <ClInclude Include="miniz\miniz.h" />
+    <ClInclude Include="miniz\miniz_common.h" />
+    <ClInclude Include="miniz\miniz_export.h" />
+    <ClInclude Include="miniz\miniz_tdef.h" />
+    <ClInclude Include="miniz\miniz_tinfl.h" />
+    <ClInclude Include="miniz\miniz_zip.h" />
+    <ClInclude Include="MoonshineTranscriber.h" />
+    <ClInclude Include="PreferencePrompt.h" />
+    <ClInclude Include="SecretStore.h" />
+    <ClInclude Include="SharedMemoryStructure.h" />
+    <ClInclude Include="SileroVAD.h" />
+    <ClInclude Include="SpellTransmitter.h" />
+    <ClInclude Include="ThreadPool.h" />
+    <ClInclude Include="Tools.h" />
+    <ClInclude Include="UE4SSInstaller.h" />
+    <ClInclude Include="VRInputHandler_SharedMemory.h" />
+    <ClInclude Include="VRPipeInterface.h" />
+    <ClInclude Include="VRSharedMemoryServer.h" />
+    <ClInclude Include="WhisperTranscriber.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="config.ini" />
+    <None Include="keybinding.txt" />
+    <None Include="..\Dependencies.props" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA $(SpellCasterCudaVersion).targets" Condition="exists('$(VCTargetsPath)\BuildCustomizations\CUDA $(SpellCasterCudaVersion).targets')" />
+  </ImportGroup>
+</Project>
